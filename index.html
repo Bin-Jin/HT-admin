@@ -2,7 +2,7 @@
 <html lang="zh-CN" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>XMeta 站长授权管理中枢</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -10,97 +10,92 @@
         tailwind.config = { darkMode: 'class', theme: { extend: { colors: { brand: '#3b82f6', success: '#22c55e', danger: '#ef4444' } } } }
     </script>
     <style>
-        body { background-color: #020617; background-image: radial-gradient(ellipse 80% 80% at 50% -20%, rgba(59, 130, 246, 0.15), rgba(255, 255, 255, 0)); color: #f8fafc; font-family: 'Inter', sans-serif; }
+        body { background-color: #020617; background-image: radial-gradient(ellipse 80% 80% at 50% -20%, rgba(59, 130, 246, 0.15), rgba(255, 255, 255, 0)); color: #f8fafc; font-family: 'Inter', sans-serif; overflow-x: hidden;}
         .glass-panel { background: linear-gradient(145deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-top: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
         .btn-gradient { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); transition: all 0.3s ease; }
-        .btn-gradient:hover { transform: translateY(-1px); box-shadow: 0 8px 20px -4px rgba(59, 130, 246, 0.5); background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%); }
+        .btn-gradient:active { transform: scale(0.95); }
         input:focus, select:focus { outline: none !important; border-color: var(--brand) !important; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
-        .uid-tag { background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); color: #60a5fa; }
     </style>
 </head>
-<body class="p-4 md:p-10 min-h-screen flex items-center justify-center">
+<body class="p-4 md:p-10 min-h-screen flex items-start justify-center pb-20">
 
-    <div id="toast-msg" class="fixed top-10 right-1/2 translate-x-1/2 z-[200] transform transition-all duration-300 -translate-y-20 opacity-0 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-2xl font-bold flex items-center gap-3 pointer-events-none text-sm border border-slate-600">
-        <span id="toast-text" class="tracking-wide">提示信息</span>
+    <div id="toast-msg" class="fixed top-5 left-1/2 -translate-x-1/2 z-[200] transform transition-all duration-300 -translate-y-20 opacity-0 bg-slate-800 text-white px-6 py-3 rounded-xl shadow-2xl font-bold flex items-center gap-3 pointer-events-none text-xs sm:text-sm border border-slate-600 w-11/12 max-w-sm">
+        <span id="toast-text" class="tracking-wide w-full text-center">提示信息</span>
     </div>
 
-    <div class="max-w-5xl w-full space-y-6">
-        <!-- 后台顶部 -->
-        <header class="glass-panel p-8 rounded-3xl flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
+    <div class="max-w-5xl w-full space-y-4 sm:space-y-6">
+        <!-- 头部 -->
+        <header class="glass-panel p-5 sm:p-8 rounded-3xl flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
             <div class="absolute -top-10 -right-10 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
-            <div class="flex items-center gap-4 relative z-10">
-                <i class="ph-fill ph-shield-star text-4xl text-brand drop-shadow-[0_0_10px_rgba(59,130,246,0.6)]"></i>
+            <div class="flex items-center gap-4 relative z-10 self-start md:self-auto">
+                <i class="ph-fill ph-shield-star text-3xl sm:text-4xl text-brand drop-shadow-[0_0_10px_rgba(59,130,246,0.6)]"></i>
                 <div>
-                    <h1 class="text-xl font-black italic tracking-tighter text-white uppercase">XMeta <span class="text-brand">Admin</span> Console</h1>
-                    <p class="text-[10px] text-slate-400 font-mono tracking-widest mt-1 uppercase">超级管理员授权中枢</p>
+                    <h1 class="text-lg sm:text-xl font-black italic tracking-tighter text-white uppercase">XMeta <span class="text-brand">Admin</span></h1>
+                    <p class="text-[9px] sm:text-[10px] text-slate-400 font-mono tracking-widest mt-1 uppercase">超级管理员授权中枢</p>
                 </div>
             </div>
             <div class="w-full md:w-auto flex flex-col gap-3 relative z-10">
-                <input id="api-url" type="text" placeholder="直连推荐留空，或填 http://127.0.0.1:5000" class="w-full bg-[#020617]/50 border border-slate-700/50 rounded-xl px-4 py-2.5 text-xs text-white transition-colors">
-                <div class="flex gap-2">
-                    <input id="admin-secret" type="password" placeholder="请输入站长密码 (默认 admin888)" class="w-full bg-[#020617]/50 border border-slate-700/50 rounded-xl px-4 py-2.5 text-xs text-white font-mono transition-colors">
-                    <button onclick="fetchCodes()" class="btn-gradient px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-lg shrink-0 whitespace-nowrap">连接后台</button>
+                <input id="api-url" type="text" placeholder="直连推荐留空，外网必填 Cpolar URL" class="w-full bg-[#020617]/50 border border-slate-700/50 rounded-xl px-4 py-3 text-xs text-white transition-colors">
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <input id="admin-secret" type="password" placeholder="站长密码" class="w-full bg-[#020617]/50 border border-slate-700/50 rounded-xl px-4 py-3 text-xs text-white font-mono transition-colors">
+                    <button onclick="fetchCodes()" class="btn-gradient w-full sm:w-auto px-5 py-3 rounded-xl text-xs font-bold text-white shadow-lg shrink-0">连接后台</button>
                 </div>
             </div>
         </header>
 
-        <!-- 管理面板 -->
-        <main id="manage-panel" class="glass-panel p-8 rounded-3xl opacity-50 pointer-events-none transition-opacity duration-300">
-            
+        <!-- 管理区 -->
+        <main id="manage-panel" class="glass-panel p-4 sm:p-8 rounded-3xl opacity-50 pointer-events-none transition-opacity duration-300">
             <!-- 签发区域 -->
-            <div class="bg-slate-800/40 border border-slate-700/50 rounded-3xl p-6 mb-8 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-64 h-64 bg-brand/5 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/4"></div>
-                <h3 class="text-sm font-black text-white mb-5 flex items-center gap-2 relative z-10"><i class="ph-fill ph-magic-wand text-brand"></i> 签发新授权码</h3>
+            <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 mb-6 sm:mb-8 relative overflow-hidden">
+                <h3 class="text-xs sm:text-sm font-black text-white mb-4 flex items-center gap-2"><i class="ph-fill ph-magic-wand text-brand"></i> 签发新授权</h3>
                 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 relative z-10">
-                    <input id="new-code" type="text" placeholder="授权码 (如: VIP999)" class="bg-[#020617]/50 border border-slate-700/50 rounded-xl px-4 py-3 text-sm text-white font-mono uppercase focus:border-brand transition-colors">
-                    <input id="new-remark" type="text" placeholder="备注 (如: 杭州王总)" class="bg-[#020617]/50 border border-slate-700/50 rounded-xl px-4 py-3 text-sm text-white focus:border-brand transition-colors">
-                    <select id="new-expire" class="bg-[#020617]/50 border border-slate-700/50 rounded-xl px-4 py-3 text-sm text-white focus:border-brand cursor-pointer transition-colors appearance-none">
-                        <option value="7">有效期: 7 天</option>
-                        <option value="30" selected>有效期: 1 个月</option>
-                        <option value="90">有效期: 3 个月</option>
-                        <option value="365">有效期: 1 年</option>
-                        <option value="-1">有效期: 永久</option>
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 relative z-10">
+                    <input id="new-code" type="text" placeholder="授权码 (如: VIP999)" class="bg-[#020617]/50 border border-slate-700/50 rounded-xl px-4 py-3 text-xs sm:text-sm text-white font-mono uppercase focus:border-brand transition-colors">
+                    <input id="new-remark" type="text" placeholder="备注 (如: 杭州王总)" class="bg-[#020617]/50 border border-slate-700/50 rounded-xl px-4 py-3 text-xs sm:text-sm text-white focus:border-brand transition-colors">
+                    <select id="new-expire" class="bg-[#020617]/50 border border-slate-700/50 rounded-xl px-4 py-3 text-xs sm:text-sm text-white focus:border-brand cursor-pointer transition-colors appearance-none">
+                        <option value="7">7 天</option>
+                        <option value="30" selected>1 个月</option>
+                        <option value="90">3 个月</option>
+                        <option value="365">1 年</option>
+                        <option value="-1">永久</option>
                     </select>
-                    <button onclick="addCode()" class="bg-success/20 text-success hover:bg-success hover:text-white border border-success/30 rounded-xl px-4 py-3 text-sm font-black transition-all shadow-md">确认签发</button>
+                    <button onclick="addCode()" class="bg-success/20 text-success hover:bg-success hover:text-white border border-success/30 rounded-xl px-4 py-3 text-xs sm:text-sm font-black transition-all shadow-md active:scale-95">确认签发</button>
                 </div>
             </div>
 
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-5 pb-5 border-b border-slate-700/50">
-                <div>
-                    <h2 class="text-lg font-black text-white flex items-center gap-2"><i class="ph-fill ph-key text-brand"></i> 下发的授权清单</h2>
-                    <p class="text-xs text-slate-400 mt-1">您可以查看每个码绑定的 UID，或在必要时重置绑定。</p>
-                </div>
+            <div class="mb-4 pb-4 border-b border-slate-700/50">
+                <h2 class="text-sm sm:text-lg font-black text-white flex items-center gap-2"><i class="ph-fill ph-key text-brand"></i> 已下发清单</h2>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-5" id="codes-list">
-                <div class="col-span-full text-center text-slate-500 text-sm py-10 italic">请先在上方输入密码并连接后台</div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="codes-list">
+                <div class="col-span-full text-center text-slate-500 text-xs sm:text-sm py-10 italic">请先在上方输入密码并连接后台</div>
             </div>
         </main>
     </div>
 
     <!-- 弹窗容器 -->
     <div id="modal-overlay" class="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm hidden items-center justify-center opacity-0 transition-opacity duration-300">
-        <div id="modal-content" class="bg-[#0f172a] border border-slate-700/50 p-6 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300">
+        <div id="modal-content" class="bg-[#0f172a] border border-slate-700/50 p-6 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] max-w-sm w-[90%] mx-auto transform scale-95 transition-transform duration-300">
             <div id="modal-body"></div>
         </div>
     </div>
 
     <script>
         let toastTimeout;
-        let pendingAction = null;
 
         window.onload = () => {
             const savedUrl = localStorage.getItem('xmeta_admin_url');
             const savedSecret = localStorage.getItem('xmeta_admin_secret');
             if(savedUrl) document.getElementById('api-url').value = savedUrl;
-            if(savedSecret) document.getElementById('admin-secret').value = savedSecret;
+            
+            // 🚀 核心优化：默认填入密码，避免手机上忘打字直接点连接
+            document.getElementById('admin-secret').value = savedSecret || 'admin888';
         };
 
         function showToast(msg, isError=false) {
             const toast = document.getElementById('toast-msg');
             document.getElementById('toast-text').innerText = msg;
-            toast.className = `fixed top-10 right-1/2 translate-x-1/2 z-[200] transform transition-all duration-300 translate-y-0 opacity-100 ${isError?'bg-danger':'bg-success'} text-white px-6 py-3 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] font-bold flex items-center gap-3 text-sm border ${isError?'border-red-400/30':'border-green-400/30'}`;
+            toast.className = `fixed top-5 left-1/2 -translate-x-1/2 z-[200] transform transition-all duration-300 translate-y-0 opacity-100 ${isError?'bg-danger':'bg-success'} text-white px-6 py-3 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] font-bold flex items-center gap-3 text-xs sm:text-sm border ${isError?'border-red-400/30':'border-green-400/30'} w-11/12 max-w-sm`;
             clearTimeout(toastTimeout);
             toastTimeout = setTimeout(() => { toast.classList.replace('translate-y-0', '-translate-y-20'); toast.classList.replace('opacity-100', 'opacity-0'); }, 3000);
         }
@@ -109,6 +104,7 @@
             let urlInput = document.getElementById('api-url').value.trim();
             let url = urlInput ? urlInput.replace(/\/$/, "") : "http://127.0.0.1:5000";
             const secret = document.getElementById('admin-secret').value.trim();
+            
             if(!secret) return showToast("站长密码不能为空！", true);
             localStorage.setItem('xmeta_admin_url', urlInput);
             localStorage.setItem('xmeta_admin_secret', secret);
@@ -120,12 +116,18 @@
                     body: JSON.stringify({ admin_secret: secret })
                 });
                 const result = await res.json();
+                
+                // 🚀 核心拦截逻辑：捕捉后端抛出的 msg 并展示
                 if (result.status === 'success') {
                     document.getElementById('manage-panel').classList.remove('opacity-50', 'pointer-events-none');
                     renderCodes(result.data);
-                    showToast("✅ 连接成功！已同步授权与UID数据");
-                } else { showToast(`⛔ 错误：${result.msg}`, true); }
-            } catch (e) { showToast("⛔ 网络异常，建议直接使用本地 127.0.0.1 地址", true); }
+                    showToast("✅ 连接成功！数据已同步");
+                } else { 
+                    showToast(`⛔ 错误：${result.msg || "密码错误或无权限"}`, true); 
+                }
+            } catch (e) { 
+                showToast("⛔ 网络异常：请检查 Cpolar 地址是否填写正确", true); 
+            }
         }
 
         function renderCodes(codes) {
@@ -141,37 +143,36 @@
                 const uid = item.bound_uid || "";
                 
                 return `
-                <div class="bg-slate-800/50 border ${item.is_expired ? 'border-danger/40 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'border-slate-700/50 hover:bg-slate-800'} p-5 rounded-2xl flex flex-col gap-4 relative overflow-hidden group transition-all">
-                    ${item.is_expired ? '<div class="absolute top-0 right-0 bg-danger text-white text-[10px] px-3 py-1 rounded-bl-xl font-bold shadow-md">已过期</div>' : ''}
+                <div class="bg-slate-800/50 border ${item.is_expired ? 'border-danger/40 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'border-slate-700/50 hover:bg-slate-800'} p-4 sm:p-5 rounded-2xl flex flex-col gap-3 sm:gap-4 relative overflow-hidden group transition-all">
+                    ${item.is_expired ? '<div class="absolute top-0 right-0 bg-danger text-white text-[9px] sm:text-[10px] px-2 py-1 rounded-bl-lg font-bold shadow-md">已过期</div>' : ''}
                     
                     <div class="flex justify-between items-start">
                         <div class="flex items-center gap-3">
-                            <i class="ph-fill ph-ticket ${item.is_expired ? 'text-slate-500' : 'text-brand'} text-3xl"></i>
+                            <i class="ph-fill ph-ticket ${item.is_expired ? 'text-slate-500' : 'text-brand'} text-2xl sm:text-3xl"></i>
                             <div>
-                                <span class="font-mono text-xl text-white font-black tracking-wider ${item.is_expired ? 'line-through text-slate-500' : ''}">${item.code}</span>
-                                <p class="text-xs text-slate-400 font-bold">${item.remark || '未备注'}</p>
+                                <span class="font-mono text-lg sm:text-xl text-white font-black tracking-wider ${item.is_expired ? 'line-through text-slate-500' : ''}">${item.code}</span>
+                                <p class="text-[10px] sm:text-xs text-slate-400 font-bold">${item.remark || '未备注'}</p>
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            ${uid ? `<button onclick="confirmAction('unbind', '${item.code}')" class="p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all" title="重置UID绑定"><i class="ph-bold ph-arrows-counter-clockwise text-lg"></i></button>` : ''}
-                            <button onclick="confirmAction('delete', '${item.code}')" class="p-2.5 rounded-xl bg-danger/10 text-danger border border-danger/20 hover:bg-danger hover:text-white transition-all" title="彻底吊销"><i class="ph-bold ph-trash text-lg"></i></button>
+                            ${uid ? `<button onclick="confirmAction('unbind', '${item.code}')" class="p-2 sm:p-2.5 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500 hover:text-white transition-all" title="重置UID绑定"><i class="ph-bold ph-arrows-counter-clockwise text-sm sm:text-lg"></i></button>` : ''}
+                            <button onclick="confirmAction('delete', '${item.code}')" class="p-2 sm:p-2.5 rounded-xl bg-danger/10 text-danger border border-danger/20 hover:bg-danger hover:text-white transition-all" title="彻底吊销"><i class="ph-bold ph-trash text-sm sm:text-lg"></i></button>
                         </div>
                     </div>
 
-                    <div class="flex flex-col gap-3 mt-1">
-                        <div class="bg-[#020617]/50 rounded-xl p-3 border border-slate-700/30">
-                            <p class="text-[9px] text-slate-500 font-bold uppercase mb-1">到期时间</p>
-                            <span class="${item.is_expired ? 'text-danger' : 'text-slate-300'} text-xs font-mono font-bold">${dateDisplay}</span>
+                    <div class="flex flex-col gap-2 mt-1">
+                        <div class="bg-[#020617]/50 rounded-lg p-2.5 border border-slate-700/30 flex justify-between items-center">
+                            <span class="text-[9px] text-slate-500 font-bold uppercase">到期时间</span>
+                            <span class="${item.is_expired ? 'text-danger' : 'text-slate-300'} text-[10px] sm:text-xs font-mono font-bold">${dateDisplay}</span>
                         </div>
-                        <!-- 🚀 核心优化：全宽展示，break-all 强制换行显示完整 UID -->
-                        <div class="bg-[#020617]/50 rounded-xl p-3 border border-slate-700/30">
+                        <div class="bg-[#020617]/50 rounded-lg p-2.5 border border-slate-700/30">
                             <div class="flex justify-between items-center mb-1">
-                                <p class="text-[9px] text-slate-500 font-bold uppercase">绑定状态</p>
-                                ${uid ? `<i class="ph ph-copy text-slate-500 cursor-pointer hover:text-white text-xs" onclick="copyToClipboard('${uid}')"></i>` : ''}
+                                <span class="text-[9px] text-slate-500 font-bold uppercase">绑定状态 (UID)</span>
+                                ${uid ? `<i class="ph ph-copy text-slate-500 cursor-pointer hover:text-white text-xs sm:text-sm" onclick="copyToClipboard('${uid}')"></i>` : ''}
                             </div>
                             ${uid ? `
-                                <div class="text-[10px] font-mono text-blue-400 font-bold break-all leading-relaxed">${uid}</div>
-                            ` : `<span class="text-[10px] text-slate-600 font-bold italic">未激活 (等待首次连接)</span>`}
+                                <div class="text-[9px] sm:text-[10px] font-mono text-blue-400 font-bold break-all leading-relaxed">${uid}</div>
+                            ` : `<span class="text-[9px] text-slate-600 font-bold italic">未激活</span>`}
                         </div>
                     </div>
                 </div>
@@ -208,22 +209,22 @@
             overlay.classList.remove('hidden'); overlay.classList.add('flex');
             
             const isDelete = type === 'delete';
-            const title = isDelete ? '确认吊销授权码' : '确认重置UID绑定';
-            const msg = isDelete ? `彻底删除授权码 [${code}]？<br>删除后该用户将永远无法再连接！` : `解绑授权码 [${code}] 的当前账号？<br>解绑后，该码可重新被新UID激活绑定。`;
+            const title = isDelete ? '确认吊销授权码' : '确认重置绑定';
+            const msg = isDelete ? `彻底删除 [${code}]？<br>删除后该用户将被强制踢下线！` : `解绑 [${code}] 的账号？<br>解绑后，该码可重新被新手机激活。`;
             const btnClass = isDelete ? 'bg-danger hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600';
             const btnText = isDelete ? '确认吊销' : '确认解绑';
 
             body.innerHTML = `
                 <div class="flex items-center gap-3 mb-4">
-                    <div class="w-10 h-10 rounded-full ${isDelete?'bg-danger/20 text-danger':'bg-blue-500/20 text-blue-400'} flex items-center justify-center shrink-0">
-                        <i class="ph-bold ${isDelete?'ph-warning-circle':'ph-arrows-counter-clockwise'} text-xl"></i>
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full ${isDelete?'bg-danger/20 text-danger':'bg-blue-500/20 text-blue-400'} flex items-center justify-center shrink-0">
+                        <i class="ph-bold ${isDelete?'ph-warning-circle':'ph-arrows-counter-clockwise'} text-lg sm:text-xl"></i>
                     </div>
-                    <h3 class="text-lg font-black text-white">${title}</h3>
+                    <h3 class="text-base sm:text-lg font-black text-white">${title}</h3>
                 </div>
-                <p class="text-sm text-slate-400 mb-6 leading-relaxed">${msg}</p>
+                <p class="text-xs sm:text-sm text-slate-400 mb-6 leading-relaxed">${msg}</p>
                 <div class="flex justify-end gap-3">
-                    <button onclick="closeModal()" class="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors">取消</button>
-                    <button onclick="executeAction('${type}', '${code}')" class="px-5 py-2.5 rounded-xl text-xs font-bold text-white ${btnClass} transition-colors">${btnText}</button>
+                    <button onclick="closeModal()" class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors">取消</button>
+                    <button onclick="executeAction('${type}', '${code}')" class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-bold text-white ${btnClass} transition-colors">${btnText}</button>
                 </div>
             `;
 
@@ -265,7 +266,7 @@
             const el = document.createElement('textarea');
             el.value = text; document.body.appendChild(el); el.select();
             document.execCommand('copy'); document.body.removeChild(el);
-            showToast("📋 UID已复制到剪贴板");
+            showToast("📋 UID已复制");
         }
     </script>
 </body>
