@@ -24,7 +24,6 @@
     </div>
 
     <div class="max-w-5xl w-full space-y-4 sm:space-y-6">
-        <!-- 头部 -->
         <header class="glass-panel p-5 sm:p-8 rounded-3xl flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
             <div class="absolute -top-10 -right-10 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
             <div class="flex items-center gap-4 relative z-10 self-start md:self-auto">
@@ -43,9 +42,7 @@
             </div>
         </header>
 
-        <!-- 管理区 -->
         <main id="manage-panel" class="glass-panel p-4 sm:p-8 rounded-3xl opacity-50 pointer-events-none transition-opacity duration-300">
-            <!-- 签发区域 -->
             <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 mb-6 sm:mb-8 relative overflow-hidden">
                 <h3 class="text-xs sm:text-sm font-black text-white mb-4 flex items-center gap-2"><i class="ph-fill ph-magic-wand text-brand"></i> 签发新授权</h3>
                 
@@ -63,8 +60,12 @@
                 </div>
             </div>
 
-            <div class="mb-4 pb-4 border-b border-slate-700/50">
-                <h2 class="text-sm sm:text-lg font-black text-white flex items-center gap-2"><i class="ph-fill ph-key text-brand"></i> 已下发清单</h2>
+            <div class="mb-4 pb-4 border-b border-slate-700/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h2 class="text-sm sm:text-lg font-black text-white flex items-center gap-2 shrink-0"><i class="ph-fill ph-key text-brand"></i> 已下发清单</h2>
+                <div class="relative w-full sm:w-64 shrink-0">
+                    <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input id="search-input" oninput="filterCodes()" type="text" placeholder="搜索授权码、备注或UID..." class="w-full bg-[#020617]/50 border border-slate-700/50 rounded-xl pl-9 pr-4 py-2 text-xs text-white focus:border-brand transition-colors">
+                </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="codes-list">
@@ -73,7 +74,6 @@
         </main>
     </div>
 
-    <!-- 弹窗容器 -->
     <div id="modal-overlay" class="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm hidden items-center justify-center opacity-0 transition-opacity duration-300">
         <div id="modal-content" class="bg-[#0f172a] border border-slate-700/50 p-6 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] max-w-sm w-[90%] mx-auto transform scale-95 transition-transform duration-300">
             <div id="modal-body"></div>
@@ -82,13 +82,12 @@
 
     <script>
         let toastTimeout;
+        let globalCodesData = []; // 用于保存所有的授权码数据以供搜索过滤
 
         window.onload = () => {
             const savedUrl = localStorage.getItem('xmeta_admin_url');
             const savedSecret = localStorage.getItem('xmeta_admin_secret');
             if(savedUrl) document.getElementById('api-url').value = savedUrl;
-            
-            // 🚀 核心优化：默认填入密码，避免手机上忘打字直接点连接
             document.getElementById('admin-secret').value = savedSecret || 'admin888';
         };
 
@@ -117,23 +116,42 @@
                 });
                 const result = await res.json();
                 
-                // 🚀 核心拦截逻辑：捕捉后端抛出的 msg 并展示
                 if (result.status === 'success') {
                     document.getElementById('manage-panel').classList.remove('opacity-50', 'pointer-events-none');
-                    renderCodes(result.data);
+                    globalCodesData = result.data; // 存入全局变量
+                    filterCodes(); // 自动应用当前的搜索过滤并渲染
                     showToast("✅ 连接成功！数据已同步");
                 } else { 
                     showToast(`⛔ 错误：${result.msg || "密码错误或无权限"}`, true); 
                 }
             } catch (e) { 
-                showToast("⛔ 网络异常：请检查 Cpolar 地址是否填写正确", true); 
+                showToast("⛔ 网络异常：请检查后台连通性", true); 
             }
+        }
+
+        // 搜索过滤逻辑
+        function filterCodes() {
+            const keyword = document.getElementById('search-input').value.toLowerCase().trim();
+            if (!keyword) {
+                renderCodes(globalCodesData);
+                return;
+            }
+            
+            const filtered = globalCodesData.filter(item => {
+                const codeMatch = item.code && item.code.toLowerCase().includes(keyword);
+                const remarkMatch = item.remark && item.remark.toLowerCase().includes(keyword);
+                const uidMatch = item.bound_uid && item.bound_uid.toLowerCase().includes(keyword);
+                return codeMatch || remarkMatch || uidMatch;
+            });
+            
+            renderCodes(filtered);
         }
 
         function renderCodes(codes) {
             const list = document.getElementById('codes-list');
             if(codes.length === 0) {
-                list.innerHTML = `<div class="col-span-full text-center text-slate-500 text-sm py-10 italic">当前没有生效的授权码。</div>`;
+                const isSearching = document.getElementById('search-input').value.trim() !== "";
+                list.innerHTML = `<div class="col-span-full text-center text-slate-500 text-sm py-10 italic">${isSearching ? '没有找到符合条件的授权码' : '当前没有生效的授权码。'}</div>`;
                 return;
             }
             
@@ -141,6 +159,7 @@
                 const isPerm = item.expire_at === "2099-12-31 23:59:59";
                 const dateDisplay = isPerm ? '永久有效' : item.expire_at.split(' ')[0];
                 const uid = item.bound_uid || "";
+                const safeRemark = item.remark || "未备注";
                 
                 return `
                 <div class="bg-slate-800/50 border ${item.is_expired ? 'border-danger/40 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'border-slate-700/50 hover:bg-slate-800'} p-4 sm:p-5 rounded-2xl flex flex-col gap-3 sm:gap-4 relative overflow-hidden group transition-all">
@@ -150,8 +169,14 @@
                         <div class="flex items-center gap-3">
                             <i class="ph-fill ph-ticket ${item.is_expired ? 'text-slate-500' : 'text-brand'} text-2xl sm:text-3xl"></i>
                             <div>
-                                <span class="font-mono text-lg sm:text-xl text-white font-black tracking-wider ${item.is_expired ? 'line-through text-slate-500' : ''}">${item.code}</span>
-                                <p class="text-[10px] sm:text-xs text-slate-400 font-bold">${item.remark || '未备注'}</p>
+                                <div class="flex items-baseline gap-1">
+                                    <span class="text-xs text-slate-400">授权码：</span>
+                                    <span class="font-mono text-lg sm:text-xl text-white font-black tracking-wider ${item.is_expired ? 'line-through text-slate-500' : ''}">${item.code}</span>
+                                </div>
+                                <div class="flex items-center gap-1 mt-0.5 group/remark cursor-pointer inline-flex" onclick="openEditRemarkModal('${item.code}', '${safeRemark}')">
+                                    <p class="text-[10px] sm:text-xs text-slate-400 font-bold border-b border-dashed border-slate-600 hover:text-brand transition-colors" title="点击修改备注">${safeRemark}</p>
+                                    <i class="ph ph-pencil-simple text-slate-500 opacity-0 group-hover/remark:opacity-100 transition-opacity text-xs"></i>
+                                </div>
                             </div>
                         </div>
                         <div class="flex gap-2">
@@ -232,6 +257,60 @@
                 overlay.classList.remove('opacity-0');
                 document.getElementById('modal-content').classList.remove('scale-95');
             }, 10);
+        }
+
+        // 修改备注的弹窗界面
+        function openEditRemarkModal(code, oldRemark) {
+            const overlay = document.getElementById('modal-overlay');
+            const body = document.getElementById('modal-body');
+            overlay.classList.remove('hidden'); overlay.classList.add('flex');
+            
+            body.innerHTML = `
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-brand/20 text-brand flex items-center justify-center shrink-0">
+                        <i class="ph-bold ph-pencil-simple text-lg sm:text-xl"></i>
+                    </div>
+                    <h3 class="text-base sm:text-lg font-black text-white">修改备注</h3>
+                </div>
+                <div class="mb-6">
+                    <label class="text-xs text-slate-400 block mb-2">为 <span class="text-white font-mono">${code}</span> 设置新备注：</label>
+                    <input id="edit-remark-input" type="text" value="${oldRemark === '未备注' ? '' : oldRemark}" placeholder="请输入新备注..." class="w-full bg-[#020617] border border-slate-700/50 rounded-xl px-4 py-3 text-sm text-white focus:border-brand transition-colors">
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button onclick="closeModal()" class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors">取消</button>
+                    <button onclick="executeEditRemark('${code}')" class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-bold text-white bg-brand hover:bg-blue-600 transition-colors">保存修改</button>
+                </div>
+            `;
+
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                document.getElementById('modal-content').classList.remove('scale-95');
+                const input = document.getElementById('edit-remark-input');
+                input.focus();
+                input.setSelectionRange(input.value.length, input.value.length);
+            }, 10);
+        }
+
+        async function executeEditRemark(code) {
+            const newRemark = document.getElementById('edit-remark-input').value.trim();
+            closeModal();
+            
+            let urlInput = document.getElementById('api-url').value.trim();
+            let url = urlInput ? urlInput.replace(/\/$/, "") : "http://127.0.0.1:5000";
+            const secret = document.getElementById('admin-secret').value.trim();
+
+            try {
+                const res = await fetch(`${url}/admin/update_remark`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'cpolar-skip-browser-warning': 'true', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify({ admin_secret: secret, code: code, remark: newRemark })
+                });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    showToast(`✅ 备注已更新`);
+                    fetchCodes(); 
+                } else { showToast(`⛔ 错误：${result.msg}`, true); }
+            } catch (e) { showToast("网络异常", true); }
         }
 
         function closeModal() {
