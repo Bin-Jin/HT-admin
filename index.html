@@ -82,7 +82,7 @@
 
     <script>
         let toastTimeout;
-        let globalCodesData = []; // 用于保存所有的授权码数据以供搜索过滤
+        let globalCodesData = []; 
 
         window.onload = () => {
             const savedUrl = localStorage.getItem('xmeta_admin_url');
@@ -118,8 +118,8 @@
                 
                 if (result.status === 'success') {
                     document.getElementById('manage-panel').classList.remove('opacity-50', 'pointer-events-none');
-                    globalCodesData = result.data; // 存入全局变量
-                    filterCodes(); // 自动应用当前的搜索过滤并渲染
+                    globalCodesData = result.data; 
+                    filterCodes(); 
                     showToast("✅ 连接成功！数据已同步");
                 } else { 
                     showToast(`⛔ 错误：${result.msg || "密码错误或无权限"}`, true); 
@@ -129,7 +129,6 @@
             }
         }
 
-        // 搜索过滤逻辑
         function filterCodes() {
             const keyword = document.getElementById('search-input').value.toLowerCase().trim();
             if (!keyword) {
@@ -186,9 +185,12 @@
                     </div>
 
                     <div class="flex flex-col gap-2 mt-1">
-                        <div class="bg-[#020617]/50 rounded-lg p-2.5 border border-slate-700/30 flex justify-between items-center">
+                        <div class="bg-[#020617]/50 rounded-lg p-2.5 border border-slate-700/30 flex justify-between items-center group/expire cursor-pointer hover:border-brand/50 transition-colors" onclick="openEditExpireModal('${item.code}')" title="点击重新设置有效时间">
                             <span class="text-[9px] text-slate-500 font-bold uppercase">到期时间</span>
-                            <span class="${item.is_expired ? 'text-danger' : 'text-slate-300'} text-[10px] sm:text-xs font-mono font-bold">${dateDisplay}</span>
+                            <div class="flex items-center gap-1">
+                                <span class="${item.is_expired ? 'text-danger' : 'text-slate-300'} text-[10px] sm:text-xs font-mono font-bold">${dateDisplay}</span>
+                                <i class="ph ph-calendar-plus text-brand opacity-0 group-hover/expire:opacity-100 transition-opacity text-xs"></i>
+                            </div>
                         </div>
                         <div class="bg-[#020617]/50 rounded-lg p-2.5 border border-slate-700/30">
                             <div class="flex justify-between items-center mb-1">
@@ -291,14 +293,47 @@
             }, 10);
         }
 
+        // 🚀 新增：修改有效时长的弹窗界面
+        function openEditExpireModal(code) {
+            const overlay = document.getElementById('modal-overlay');
+            const body = document.getElementById('modal-body');
+            overlay.classList.remove('hidden'); overlay.classList.add('flex');
+
+            body.innerHTML = `
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-success/20 text-success flex items-center justify-center shrink-0">
+                        <i class="ph-bold ph-calendar-plus text-lg sm:text-xl"></i>
+                    </div>
+                    <h3 class="text-base sm:text-lg font-black text-white">修改授权时长</h3>
+                </div>
+                <div class="mb-6">
+                    <label class="text-xs text-slate-400 block mb-2">为 <span class="text-white font-mono">${code}</span> 重新设定有效期：</label>
+                    <select id="edit-expire-select" class="w-full bg-[#020617] border border-slate-700/50 rounded-xl px-4 py-3 text-sm text-white focus:border-brand transition-colors appearance-none cursor-pointer">
+                        <option value="7">从当前延续/重置为 7 天</option>
+                        <option value="30" selected>从当前延续/重置为 1 个月</option>
+                        <option value="90">从当前延续/重置为 3 个月</option>
+                        <option value="365">从当前延续/重置为 1 年</option>
+                        <option value="-1">设定为永久有效</option>
+                    </select>
+                </div>
+                <div class="flex justify-end gap-3">
+                    <button onclick="closeModal()" class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors">取消</button>
+                    <button onclick="executeEditExpire('${code}')" class="px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-bold text-white bg-success hover:bg-green-600 transition-colors">确认修改</button>
+                </div>
+            `;
+
+            setTimeout(() => {
+                overlay.classList.remove('opacity-0');
+                document.getElementById('modal-content').classList.remove('scale-95');
+            }, 10);
+        }
+
         async function executeEditRemark(code) {
             const newRemark = document.getElementById('edit-remark-input').value.trim();
             closeModal();
-            
             let urlInput = document.getElementById('api-url').value.trim();
             let url = urlInput ? urlInput.replace(/\/$/, "") : "http://127.0.0.1:5000";
             const secret = document.getElementById('admin-secret').value.trim();
-
             try {
                 const res = await fetch(`${url}/admin/update_remark`, {
                     method: 'POST',
@@ -306,10 +341,31 @@
                     body: JSON.stringify({ admin_secret: secret, code: code, remark: newRemark })
                 });
                 const result = await res.json();
-                if (result.status === 'success') {
-                    showToast(`✅ 备注已更新`);
+                if (result.status === 'success') { showToast(`✅ 备注已更新`); fetchCodes(); } else { showToast(`⛔ 错误：${result.msg}`, true); }
+            } catch (e) { showToast("网络异常", true); }
+        }
+
+        // 🚀 新增：执行修改授权时间的接口调用
+        async function executeEditExpire(code) {
+            const expireDays = parseInt(document.getElementById('edit-expire-select').value);
+            closeModal();
+            let urlInput = document.getElementById('api-url').value.trim();
+            let url = urlInput ? urlInput.replace(/\/$/, "") : "http://127.0.0.1:5000";
+            const secret = document.getElementById('admin-secret').value.trim();
+
+            try {
+                const res = await fetch(`${url}/admin/update_expire`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'cpolar-skip-browser-warning': 'true', 'ngrok-skip-browser-warning': 'true' },
+                    body: JSON.stringify({ admin_secret: secret, code: code, expire_days: expireDays })
+                });
+                const result = await res.json();
+                if (result.status === 'success') { 
+                    showToast(`✅ 授权有效时长已更新`); 
                     fetchCodes(); 
-                } else { showToast(`⛔ 错误：${result.msg}`, true); }
+                } else { 
+                    showToast(`⛔ 错误：${result.msg}`, true); 
+                }
             } catch (e) { showToast("网络异常", true); }
         }
 
